@@ -32,12 +32,11 @@ export const ForecastList: React.FC<ForecastListProps> = ({
         7-Day Forecast
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {forecasts.map((forecast, index) => (
+        {forecasts.map((forecast) => (
           <ForecastCard
             key={forecast.date}
             forecast={forecast}
             units={units}
-            style={{ animationDelay: `${index * 50}ms` }}
           />
         ))}
       </div>

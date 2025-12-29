@@ -4,7 +4,6 @@
  */
 
 import { weatherApiClient, geoApiClient } from '@/shared/utils/httpClient';
-import { API_ENDPOINTS } from '@/config/constants';
 import { env } from '@/config/env';
 import type {
   GeoLocation,
@@ -28,7 +27,7 @@ export const searchCities = async (
   }
 
   const locations = await geoApiClient.get<GeoLocation[]>(
-    '/direct', // This will be combined with geoBaseUrl
+    '/direct',
     {
       params: {
         q: query,

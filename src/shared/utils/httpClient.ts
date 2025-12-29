@@ -4,7 +4,7 @@
  */
 
 import { env } from '@/config/env';
-import { ERROR_MESSAGES, HTTP_STATUS } from '@/config/constants';
+import { HTTP_STATUS } from '@/config/constants';
 import type { ApiErrorResponse } from '@/shared/types/weather.types';
 
 /**
@@ -37,14 +37,11 @@ const buildUrl = (
   endpoint: string,
   params?: Record<string, string | number | boolean>
 ): string => {
-  // Clean up baseUrl and endpoint
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
-  // Combine base URL and endpoint
   let fullUrl = `${cleanBaseUrl}${cleanEndpoint}`;
 
-  // Add query parameters
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -63,10 +60,9 @@ const buildUrl = (
  * Handles API error responses
  */
 const handleApiError = async (response: Response): Promise<never> => {
-  let errorMessage = ERROR_MESSAGES.API_ERROR;
+  let errorMessage = 'Failed to fetch weather data. Please try again.';
   let apiError: ApiErrorResponse | null = null;
 
-  // Try to parse error response
   try {
     apiError = await response.json();
     if (apiError?.message) {
@@ -76,16 +72,15 @@ const handleApiError = async (response: Response): Promise<never> => {
     // If parsing fails, use default error message
   }
 
-  // Handle specific status codes
   switch (response.status) {
     case HTTP_STATUS.UNAUTHORIZED:
       errorMessage = 'Invalid API key. Please check your configuration.';
       break;
     case HTTP_STATUS.NOT_FOUND:
-      errorMessage = ERROR_MESSAGES.INVALID_CITY;
+      errorMessage = 'City not found. Please check the spelling and try again.';
       break;
     case HTTP_STATUS.TOO_MANY_REQUESTS:
-      errorMessage = ERROR_MESSAGES.RATE_LIMIT;
+      errorMessage = 'Too many requests. Please wait a moment and try again.';
       break;
     case HTTP_STATUS.SERVER_ERROR:
       errorMessage = 'Server error. Please try again later.';
@@ -118,24 +113,18 @@ class HttpClient {
     this.baseUrl = baseUrl;
   }
 
-  /**
-   * Makes a GET request
-   */
   async get<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<T> {
     const { timeout = env.api.timeout, params, signal, ...fetchOptions } = options;
 
-    // Create abort controller for timeout
     const timeoutController = createAbortController(timeout);
-
-    // Use provided signal or timeout signal
     const finalSignal = signal || timeoutController.signal;
 
     const url = buildUrl(this.baseUrl, endpoint, params);
     
-    console.log('🌐 Fetching URL:', url); // Debug log
+    console.log('🌐 Fetching URL:', url);
 
     try {
       const response = await fetch(url, {
@@ -155,33 +144,22 @@ class HttpClient {
       const data = await response.json();
       return data as T;
     } catch (error) {
-      // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new ApiError(ERROR_MESSAGES.TIMEOUT);
+        throw new ApiError('Request timed out. Please try again.');
       }
 
-      // Handle network errors
       if (error instanceof TypeError) {
-        throw new ApiError(ERROR_MESSAGES.NETWORK_ERROR);
+        throw new ApiError('Network error. Please check your internet connection.');
       }
 
-      // Re-throw API errors
       if (error instanceof ApiError) {
         throw error;
       }
 
-      // Handle unknown errors
-      throw new ApiError(ERROR_MESSAGES.UNKNOWN, undefined, error);
+      throw new ApiError('An unexpected error occurred. Please try again.', undefined, error);
     }
   }
 }
 
-/**
- * Weather API HTTP client instance
- */
 export const weatherApiClient = new HttpClient(env.weather.baseUrl);
-
-/**
- * Geocoding API HTTP client instance
- */
 export const geoApiClient = new HttpClient(env.weather.geoBaseUrl);
