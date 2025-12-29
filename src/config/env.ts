@@ -35,10 +35,18 @@ const validateEnv = (): void => {
   );
 
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}\n` +
-        'Please check your .env file and ensure all required variables are set.'
+    console.error(
+      `Missing required environment variables: ${missing.join(', ')}`
     );
+    console.error('Please check your .env file and ensure all required variables are set.');
+    
+    // Only throw in development, warn in production
+    if (import.meta.env.DEV) {
+      throw new Error(
+        `Missing required environment variables: ${missing.join(', ')}\n` +
+          'Please check your .env file and ensure all required variables are set.'
+      );
+    }
   }
 };
 
@@ -67,7 +75,7 @@ validateEnv();
  */
 export const env: EnvConfig = {
   weather: {
-    apiKey: getEnvVar('VITE_WEATHER_API_KEY'),
+    apiKey: getEnvVar('VITE_WEATHER_API_KEY', ''),
     baseUrl: getEnvVar(
       'VITE_WEATHER_API_BASE_URL',
       'https://api.openweathermap.org/data/2.5'
