@@ -38,7 +38,6 @@ export const searchCities = async (
     }
   );
 
-  // Transform to search suggestions
   return locations.map((location) => ({
     id: generateId(),
     name: location.name,
